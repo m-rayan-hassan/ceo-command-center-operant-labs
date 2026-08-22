@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+
+# environment files
+.env
+.env.*
+!.env.example
+
+# next.js / frontend build
+.next/
+out/
+build/
+dist/
+
+# coverage / tests
+coverage/
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+next-env.d.ts
+
+# editors / os
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# vercel
+.vercel/
