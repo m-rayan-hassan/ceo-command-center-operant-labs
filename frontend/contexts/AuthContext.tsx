@@ -16,6 +16,8 @@ type AuthContextType = {
   logout: () => Promise<void>;
 };
 
+const PUBLIC_PATHS = ["/", "/login", "/register"];
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -31,15 +33,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (token) {
           const { data } = await api.get("/auth/me");
           setUser(data);
+          if (pathname === "/") {
+            router.push("/dashboard");
+          }
         } else {
-           if (pathname !== "/login" && pathname !== "/register") {
-              router.push("/login");
-           }
-        }
-      } catch (err) {
-        localStorage.removeItem("token");
-        if (pathname !== "/login" && pathname !== "/register") {
+          if (!PUBLIC_PATHS.includes(pathname)) {
             router.push("/login");
+          }
+        }
+      } catch {
+        localStorage.removeItem("token");
+        if (!PUBLIC_PATHS.includes(pathname)) {
+          router.push("/login");
         }
       } finally {
         setLoading(false);

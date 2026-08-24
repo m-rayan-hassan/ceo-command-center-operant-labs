@@ -47,3 +47,10 @@ export const approvals = pgTable('approvals', {
   messageId: text('message_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+export const meetings = pgTable('meetings', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  meetingDateAndTime: timestamp('meeting_date_and_time').notNull(),
+  meetingDescription: text('meeting_description').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});

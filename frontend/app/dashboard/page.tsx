@@ -6,8 +6,53 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
-import { DollarSign, ArrowUpRight, ArrowDownRight, Clock, Activity, Loader2, CheckCircle2, XCircle, ChevronRight } from "lucide-react";
+import { DollarSign, ArrowUpRight, ArrowDownRight, Clock, Activity, Loader2, CheckCircle2, XCircle, ChevronRight, Users, CreditCard, Briefcase, Cog, Lightbulb, Bot, ExternalLink, Calendar } from "lucide-react";
 import { useCallback } from "react";
+
+const MODULES = [
+  {
+    name: "Enterprise CRM",
+    icon: Users,
+    description: "Customer relationships, pipeline and sales activity across every deal.",
+    status: "coming-soon",
+    href: "#",
+  },
+  {
+    name: "Finance & Billing",
+    icon: CreditCard,
+    description: "Invoicing, collections, recurring revenue and financial operations.",
+    status: "available",
+    href: "https://operant-labs-billing-platform.vercel.app/",
+  },
+  {
+    name: "Enterprise HRMS",
+    icon: Briefcase,
+    description: "People, payroll, talent and workforce management tools.",
+    status: "coming-soon",
+    href: "#",
+  },
+  {
+    name: "Operations & Delivery",
+    icon: Cog,
+    description: "Project execution, delivery pipelines and operational workflows.",
+    status: "coming-soon",
+    href: "#",
+  },
+  {
+    name: "Knowledge & AI Center",
+    icon: Lightbulb,
+    description: "Company knowledge, insights and AI-assisted decision support.",
+    status: "coming-soon",
+    href: "#",
+  },
+  {
+    name: "AI Workforce",
+    icon: Bot,
+    description: "Deploy and manage autonomous agents across your workflows.",
+    status: "coming-soon",
+    href: "#",
+  },
+];
 
 interface Stats {
   monthlyRevenue: number;
@@ -30,6 +75,14 @@ interface Approval {
   status: string;
   threadId: string | null;
   messageId: string | null;
+  messageId: string | null;
+  createdAt: string;
+}
+
+interface Meeting {
+  id: string;
+  meetingDateAndTime: string;
+  meetingDescription: string;
   createdAt: string;
 }
 
@@ -37,6 +90,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [briefing, setBriefing] = useState<{ briefing: string, createdAt: string } | null>(null);
   const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +112,13 @@ export default function DashboardPage() {
           setApprovals(approvalsRes.data);
         } catch (aErr) {
           console.error("Failed to fetch approvals", aErr);
+        }
+
+        try {
+          const meetingsRes = await api.get("/meetings/today");
+          setMeetings(meetingsRes.data);
+        } catch (mErr) {
+          console.error("Failed to fetch meetings", mErr);
         }
 
         setError(null);
@@ -232,59 +293,161 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Decisions Waiting Card */}
+      {/* Decisions Waiting & Today's Meetings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        {/* Decisions Waiting Card */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-lg font-bold">Decisions Waiting</h3>
+              <p className="text-xs text-[var(--foreground-variant)] mt-0.5">
+                {latestPending.length > 0 ? `Latest ${latestPending.length} pending approval${latestPending.length !== 1 ? 's' : ''}` : 'No pending approvals'}
+              </p>
+            </div>
+            <Link
+              href="/dashboard/approvals"
+              className="flex items-center gap-1 text-xs text-[var(--foreground-variant)] hover:text-[var(--foreground)] transition-colors"
+            >
+              View all <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {latestPending.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-[var(--foreground-variant)]">
+              <CheckCircle2 className="h-8 w-8 mb-2 opacity-30" />
+              <p className="text-sm opacity-60">No pending decisions</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {latestPending.map((approval) => (
+                <div
+                  key={approval.id}
+                  className="flex items-center justify-between px-4 py-3 rounded-lg bg-[var(--surface-dim)]/50 hover:bg-[var(--surface-dim)] transition-colors group"
+                >
+                  <div className="flex-1 min-w-0 mr-4">
+                    <p className="text-sm font-medium truncate">{approval.subject}</p>
+                    <p className="text-xs text-[var(--foreground-variant)] mt-0.5 truncate">{approval.from}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      title="Approve"
+                      className="p-1.5 rounded-md text-green-500/60 hover:text-green-400 hover:bg-green-500/10 transition-all"
+                      onClick={() => handleApprovalAction(approval.id, 'approved')}
+                    >
+                      <CheckCircle2 className="h-5 w-5" />
+                    </button>
+                    <button
+                      title="Reject"
+                      className="p-1.5 rounded-md text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                      onClick={() => handleApprovalAction(approval.id, 'rejected')}
+                    >
+                      <XCircle className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Today's Meetings Card */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-lg font-bold">Today's Meetings</h3>
+              <p className="text-xs text-[var(--foreground-variant)] mt-0.5">
+                {meetings.length > 0 ? `${meetings.length} meeting${meetings.length !== 1 ? 's' : ''} scheduled for today` : 'No meetings today'}
+              </p>
+            </div>
+            <Calendar className="h-5 w-5 text-[var(--foreground-variant)]" />
+          </div>
+
+          {meetings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-[var(--foreground-variant)]">
+              <Calendar className="h-8 w-8 mb-2 opacity-30" />
+              <p className="text-sm opacity-60">Your schedule is clear</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {meetings.map((meeting) => {
+                const meetingDate = new Date(meeting.meetingDateAndTime);
+                return (
+                  <div
+                    key={meeting.id}
+                    className="flex flex-col px-4 py-3 rounded-lg bg-[var(--surface-dim)]/50 hover:bg-[var(--surface-dim)] transition-colors group"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-semibold text-[var(--foreground)] truncate pr-2">{meeting.meetingDescription}</p>
+                      <span className="text-xs font-medium text-[var(--color-electric-cyan)] bg-[var(--color-electric-cyan)]/10 px-2 py-0.5 rounded-full shrink-0">
+                        {meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[var(--foreground-variant)] flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
+                      {meetingDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modules */}
       <div className="glass-card p-6 mt-4">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-lg font-bold">Decisions Waiting</h3>
+            <h3 className="text-lg font-bold">Modules</h3>
             <p className="text-xs text-[var(--foreground-variant)] mt-0.5">
-              {latestPending.length > 0 ? `Latest ${latestPending.length} pending approval${latestPending.length !== 1 ? 's' : ''}` : 'No pending approvals'}
+              Quick access across your operating system
             </p>
           </div>
-          <Link
-            href="/dashboard/approvals"
-            className="flex items-center gap-1 text-xs text-[var(--foreground-variant)] hover:text-[var(--foreground)] transition-colors"
-          >
-            View all <ChevronRight className="h-3 w-3" />
-          </Link>
         </div>
 
-        {latestPending.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-[var(--foreground-variant)]">
-            <CheckCircle2 className="h-8 w-8 mb-2 opacity-30" />
-            <p className="text-sm opacity-60">No pending decisions</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {latestPending.map((approval) => (
-              <div
-                key={approval.id}
-                className="flex items-center justify-between px-4 py-3 rounded-lg bg-[var(--surface-dim)]/50 hover:bg-[var(--surface-dim)] transition-colors group"
-              >
-                <div className="flex-1 min-w-0 mr-4">
-                  <p className="text-sm font-medium truncate">{approval.subject}</p>
-                  <p className="text-xs text-[var(--foreground-variant)] mt-0.5 truncate">{approval.from}</p>
+        <div className="grid grid-cols-6 gap-4">
+          {MODULES.map(({ name, icon: Icon, description, status, href }) => {
+            const available = status === "available";
+            return (
+              <div key={name} className="glass-card p-5 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--surface-dim)] flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-[var(--foreground)]" />
+                  </div>
+                  {available ? (
+                    <span className="text-[10px] uppercase tracking-wider bg-[var(--color-electric-cyan)]/10 text-[var(--color-electric-cyan)] px-2 py-0.5 rounded-full">Live</span>
+                  ) : (
+                    <span className="text-[10px] uppercase tracking-wider bg-[var(--surface-dim)] px-2 py-0.5 rounded-full text-[var(--foreground-variant)]">Soon</span>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    title="Approve"
-                    className="p-1.5 rounded-md text-green-500/60 hover:text-green-400 hover:bg-green-500/10 transition-all"
-                    onClick={() => handleApprovalAction(approval.id, 'approved')}
-                  >
-                    <CheckCircle2 className="h-5 w-5" />
-                  </button>
-                  <button
-                    title="Reject"
-                    className="p-1.5 rounded-md text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                    onClick={() => handleApprovalAction(approval.id, 'rejected')}
-                  >
-                    <XCircle className="h-5 w-5" />
-                  </button>
+                <h4 className="text-sm font-semibold text-[var(--foreground)]">{name}</h4>
+                <p className="text-xs text-[var(--foreground-variant)] mt-1.5 leading-snug mt-0.5">
+                  {available ? description : "Under development — coming soon."}
+                </p>
+                <div className="mt-4">
+                  {available ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-outline w-full h-9 text-xs flex items-center justify-center gap-1.5"
+                    >
+                      Open Module
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  ) : (
+                    <button
+                      disabled
+                      className="btn-outline w-full h-9 text-xs cursor-not-allowed"
+                    >
+                      Coming Soon
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 import approvalsRouter from "./routes/approvals.routes.js";
+import meetingsRouter from "./routes/meetings.routes.js";
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/approvals", approvalsRouter);
+app.use("/api/meetings", meetingsRouter);
 
 // 404 Handler
 app.use((_req, res) => {
