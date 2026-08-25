@@ -54,3 +54,10 @@ export const meetings = pgTable('meetings', {
   meetingDescription: text('meeting_description').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+export const notifications = pgTable('notifications', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  message: text('message').notNull(),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});

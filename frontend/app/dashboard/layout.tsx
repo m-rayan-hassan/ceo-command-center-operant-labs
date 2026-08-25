@@ -1,5 +1,7 @@
 "use client";
-
+import { useState, useEffect } from "react";
+import api from "../../lib/api";
+import NotificationsSidebar from "../../components/NotificationsSidebar";
 import { useAuth } from "../../contexts/AuthContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -52,10 +54,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout, loading } = useAuth();
   const pathname = usePathname();
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.get("/notifications");
+        setNotifications(res.data);
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+    
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const handleMarkAsRead = async (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    try {
+      await api.patch(`/notifications/${id}/read`);
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: false } : n));
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    try {
+      await api.patch("/notifications/read-all");
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+      setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, isRead: false } : n));
+    }
+  };
+
   if (loading || !user) return null; // handled by AuthContext redirect
 
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   return (
-    <div className="flex h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
+    <div className="flex h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden relative">
+      <NotificationsSidebar 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
+        loading={loadingNotifications}
+      />
+
       {/* Sidebar */}
       <aside className="w-64 flex flex-col bg-[var(--surface)] border-r border-[var(--border-subtle)] shrink-0">
         <div className="p-6 border-b border-[var(--border-subtle)]">
@@ -132,8 +188,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-[var(--background)]">
-        {children}
+      <main className="flex-1 flex flex-col overflow-hidden bg-[var(--background)]">
+        {/* Global Header for Notification Bell */}
+        <header className="h-16 flex items-center justify-end px-8 border-b border-[var(--border-subtle)] shrink-0 bg-[var(--background)]/80 backdrop-blur-md z-10 sticky top-0">
+          <button 
+            onClick={() => setIsSidebarOpen(true)}
+            className="relative p-2 rounded-full hover:bg-[var(--surface-dim)] transition-colors"
+          >
+            <Bell className="w-5 h-5 text-[var(--foreground-variant)] hover:text-[var(--foreground)]" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-[var(--color-electric-cyan)] text-[var(--background)] text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-[var(--background)]">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+        </header>
+        
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
       </main>
     </div>
   );

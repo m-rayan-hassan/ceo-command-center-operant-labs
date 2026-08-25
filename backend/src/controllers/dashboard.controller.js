@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { db } from "../db/db.js";
-import { briefings } from "../db/schema.js";
-import { desc } from "drizzle-orm";
+import { briefings, notifications } from "../db/schema.js";
+import { desc, and, gte, lt } from "drizzle-orm";
 
 const BILLING_PLATFORM_URL = process.env.BILLING_PLATFORM_URL;
 const BILLING_JWT_SECRET = process.env.BILLING_JWT_SECRET;
@@ -37,9 +37,21 @@ export async function getDashboardStats(req, res, next) {
 
 export async function getLatestBriefing(req, res, next) {
     try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
         const latestBriefing = await db
             .select()
             .from(briefings)
+            .where(
+                and(
+                    gte(briefings.createdAt, today),
+                    lt(briefings.createdAt, tomorrow)
+                )
+            )
             .orderBy(desc(briefings.createdAt))
             .limit(1);
 
@@ -56,7 +68,7 @@ export async function getLatestBriefing(req, res, next) {
 
 export async function addBriefing(req, res, next) {
     try {
-        const { briefing } = req.body;
+        const { briefing, notifications: notificationsArr } = req.body;
         if (!briefing) {
             return res.status(400).json({ error: "Briefing text is required" });
         }
@@ -65,6 +77,11 @@ export async function addBriefing(req, res, next) {
             .insert(briefings)
             .values({ briefing })
             .returning();
+
+        if (notificationsArr && Array.isArray(notificationsArr) && notificationsArr.length > 0) {
+            const notificationValues = notificationsArr.map(msg => ({ message: msg }));
+            await db.insert(notifications).values(notificationValues);
+        }
 
         res.status(201).json(newBriefing[0]);
     } catch (err) {

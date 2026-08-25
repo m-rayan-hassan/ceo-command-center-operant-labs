@@ -62,7 +62,7 @@ export const getAllApprovals = async (req, res) => {
 };
 
 
-const N8N_WEBHOOK_URL = 'https://rayanhassan.app.n8n.cloud/webhook-test/send-approval-status';
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 
 // Update approval status — saves to DB, then notifies n8n
 export const updateApprovalStatus = async (req, res) => {

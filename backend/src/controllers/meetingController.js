@@ -1,5 +1,5 @@
 import { db } from '../db/db.js';
-import { meetings } from '../db/schema.js';
+import { meetings, notifications } from '../db/schema.js';
 import { gte, lt, and } from 'drizzle-orm';
 
 export const addMeeting = async (req, res) => {
@@ -18,6 +18,14 @@ export const addMeeting = async (req, res) => {
             meetingDateAndTime: date,
             meetingDescription
         }).returning();
+
+        // Create a notification for the new meeting
+        const formattedDate = date.toLocaleString(undefined, { 
+            weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+        });
+        await db.insert(notifications).values({
+            message: `New meeting scheduled: ${meetingDescription} on ${formattedDate}`
+        });
 
         res.status(201).json({ status: "success", data: newMeeting });
     } catch (error) {

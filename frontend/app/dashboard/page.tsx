@@ -75,7 +75,6 @@ interface Approval {
   status: string;
   threadId: string | null;
   messageId: string | null;
-  messageId: string | null;
   createdAt: string;
 }
 
@@ -222,7 +221,7 @@ export default function DashboardPage() {
               {briefing.briefing.replace(/\\n/g, '\n')}
             </ReactMarkdown>
           ) : (
-            <p className="italic text-sm opacity-75 m-0">No new briefings at this time.</p>
+            <p className="italic text-sm opacity-75 m-0">No briefing for today.</p>
           )}
         </div>
       </div>

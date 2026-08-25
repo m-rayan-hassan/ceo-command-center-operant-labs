@@ -10,6 +10,7 @@ import authRouter from "./routes/auth.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 import approvalsRouter from "./routes/approvals.routes.js";
 import meetingsRouter from "./routes/meetings.routes.js";
+import notificationsRouter from "./routes/notifications.routes.js";
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/approvals", approvalsRouter);
 app.use("/api/meetings", meetingsRouter);
+app.use("/api/notifications", notificationsRouter);
 
 // 404 Handler
 app.use((_req, res) => {
