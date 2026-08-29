@@ -75,7 +75,7 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 {...register("email")}
-                placeholder="you@operant.ai"
+                placeholder="you@operantlabs.io"
                 className="w-full bg-[var(--surface)] border border-[var(--border-strong)] rounded-lg py-2.5 pl-10 pr-4 text-[var(--foreground)] placeholder:text-[var(--foreground-variant)] focus:outline-none focus:ring-2 focus:ring-[var(--foreground)] focus:border-transparent transition-all"
                 disabled={isSubmitting}
               />
