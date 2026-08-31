@@ -375,12 +375,7 @@ export default function DashboardPage() {
                     key={meeting.id}
                     className="flex flex-col px-4 py-3 rounded-lg bg-[var(--surface-dim)]/50 hover:bg-[var(--surface-dim)] transition-colors group"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-[var(--foreground)] truncate pr-2">{meeting.meetingDescription}</p>
-                      <span className="text-xs font-medium text-[var(--color-electric-cyan)] bg-[var(--color-electric-cyan)]/10 px-2 py-0.5 rounded-full shrink-0">
-                        {meetingDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
+                    <p className="text-sm font-semibold text-[var(--foreground)] mb-1">{meeting.meetingDescription}</p>
                     <p className="text-xs text-[var(--foreground-variant)] flex items-center gap-1.5">
                       <Clock className="h-3 w-3" />
                       {meetingDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
