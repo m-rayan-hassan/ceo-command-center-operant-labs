@@ -1,6 +1,6 @@
 import { z } from "zod";
 import argon2 from "argon2";
-import { eq } from "drizzle-orm";
+import { eq, and, desc, gt } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { db } from "../db/db.js";
 import { users, refreshTokens } from "../db/schema.js";
@@ -108,7 +108,7 @@ export async function refresh(req, res, next) {
         if (!raw) return res.status(401).json({ error: "No refresh token" });
 
         const tokenHash = hashToken(raw);
-        const existing = await db.query.refreshTokens.findFirst({
+        let existing = await db.query.refreshTokens.findFirst({
             where: eq(refreshTokens.tokenHash, tokenHash),
         });
 
@@ -117,16 +117,35 @@ export async function refresh(req, res, next) {
         if (existing.expiresAt < new Date())
             return res.status(401).json({ error: "Refresh token expired" });
 
+        // Rotation means two requests can legitimately present the same refresh
+        // token in quick succession: multiple open tabs share one cookie, and the
+        // frontend may fire several API calls around the moment the access token
+        // expires. The second one finds this token already `revoked`. Treat that
+        // as normal concurrency and adopt the family's current live token so the
+        // session keeps working — never log a user out just for this.
         if (existing.revoked) {
-            await db
-                .update(refreshTokens)
-                .set({ revoked: true })
-                .where(eq(refreshTokens.familyId, existing.familyId));
-            return res
-                .status(401)
-                .json({
-                    error: "Refresh token reuse detected — session revoked, please log in again",
-                });
+            const successor = await db.query.refreshTokens.findFirst({
+                where: and(
+                    eq(refreshTokens.familyId, existing.familyId),
+                    eq(refreshTokens.revoked, false),
+                    gt(refreshTokens.expiresAt, new Date()),
+                ),
+                orderBy: desc(refreshTokens.createdAt),
+            });
+
+            if (!successor) {
+                await db
+                    .update(refreshTokens)
+                    .set({ revoked: true })
+                    .where(eq(refreshTokens.familyId, existing.familyId));
+                return res
+                    .status(401)
+                    .json({
+                        error: "Refresh token reuse detected — session revoked, please log in again",
+                    });
+            }
+
+            existing = successor;
         }
 
         const user = await db.query.users.findFirst({

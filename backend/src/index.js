@@ -13,6 +13,7 @@ import meetingsRouter from "./routes/meetings.routes.js";
 import notificationsRouter from "./routes/notifications.routes.js";
 
 const app = express();
+app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 5001;
 

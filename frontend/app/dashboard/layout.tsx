@@ -33,9 +33,9 @@ const SIDEBAR_SECTIONS = [
   {
     title: "2. MODULES",
     items: [
-      { name: "Enterprise CRM", href: "#", icon: Users, comingSoon: true },
-      { name: "Finance & Billing", href: "https://operant-labs-billing-platform.vercel.app/", icon: CreditCard },
-      { name: "Enterprise HRMS", href: "#", icon: Briefcase, comingSoon: true },
+      { name: "Enterprise CRM", href: process.env.NEXT_PUBLIC_CRM_URL || "#", icon: Users },
+      { name: "Finance & Billing", href: process.env.NEXT_PUBLIC_BILLING_URL || "#", icon: CreditCard },
+      { name: "Enterprise HRMS", href: process.env.NEXT_PUBLIC_HRMS_URL || "#", icon: Briefcase },
       { name: "Operations & Delivery", href: "#", icon: Cog, comingSoon: true },
       { name: "Knowledge & AI Center", href: "#", icon: Lightbulb, comingSoon: true },
       { name: "AI Workforce", href: "#", icon: Bot, comingSoon: true },
@@ -150,6 +150,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       ) : (
                         <Link
                           href={item.href}
+                          target={section.title === "2. MODULES" ? "_blank" : undefined}
+                          rel={section.title === "2. MODULES" ? "noopener noreferrer" : undefined}
                           className={`flex items-center gap-3 px-2 py-2 text-sm rounded-lg transition-all ${
                             isActive
                               ? "bg-[var(--card-hover)] text-[var(--foreground)] font-medium"

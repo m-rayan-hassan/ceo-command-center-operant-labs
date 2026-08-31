@@ -61,6 +61,29 @@ api.interceptors.response.use(
         
         return api(originalRequest);
       } catch (refreshError) {
+        // The refresh token rotates on every use, so a refresh can transiently
+        // fail when the cookie was just rotated by a concurrent request (e.g.
+        // another tab) or by an in-flight API call racing the token expiry.
+        // Retry once before giving up on the session.
+        if (!originalRequest._refreshRetried) {
+          originalRequest._refreshRetried = true;
+          await new Promise((r) => setTimeout(r, 400));
+          try {
+            const { data } = await axios.post(
+              `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/auth/refresh`,
+              {},
+              { withCredentials: true }
+            );
+            const token = data.accessToken;
+            localStorage.setItem('token', token);
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            processQueue(null, token);
+            return api(originalRequest);
+          } catch {
+            // fall through to logout
+          }
+        }
+
         processQueue(refreshError, null);
         localStorage.removeItem('token');
         if (typeof window !== 'undefined' && window.location.pathname !== '/login') {

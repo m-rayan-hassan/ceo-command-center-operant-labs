@@ -28,11 +28,11 @@ export function hashToken(raw) {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
-export const REFRESH_COOKIE_NAME = 'refresh_token';
+export const REFRESH_COOKIE_NAME = 'ceo_refresh_token';
 export const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  secure: process.env.NODE_ENV !== 'development',
+  sameSite: process.env.NODE_ENV !== 'development' ? 'none' : 'lax',
   path: '/',
   maxAge: REFRESH_TTL_MS,
 };
