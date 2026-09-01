@@ -4,13 +4,13 @@ node_modules/
 # environment files
 .env
 .env.*
-!.env.example
 
 # next.js / frontend build
 .next/
 out/
 build/
 dist/
+!.env.example
 
 # coverage / tests
 coverage/
