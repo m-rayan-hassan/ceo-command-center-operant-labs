@@ -1,0 +1,334 @@
+{
+  "name": "Approval Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -32,
+        -48
+      ],
+      "id": "cbb1256b-027d-4f03-a779-8a97cc8389a0",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "j0CDksGzU2NCdTqV",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an intelligent Executive Assistant managing a CEO's inbox. \nYour only task is to analyze the incoming email below and determine if it is a genuine \"approval request\" that requires the CEO's authorization, permission, or sign-off.\n\n### 📌 WHAT COUNTS AS AN APPROVAL (Output: true)\n- Explicit requests for permission (e.g., \"Can I proceed?\", \"Is it okay if I...\").\n- Financial requests (e.g., budget sign-off, invoice approvals, expense reports).\n- HR/Admin requests (e.g., PTO/vacation requests, hiring offers).\n- Project/Tech sign-offs (e.g., \"Please review and approve the final draft\", PR reviews).\n- Automated approval requests from internal tools (e.g., Workday, Jira, Deel, GitHub) that specifically require the CEO's action.\n\n### 🚫 WHAT DOES NOT COUNT AS AN APPROVAL (Output: false)\n- General FYIs, status updates, or reports (e.g., \"Here is the weekly update\").\n- Client inquiries, support tickets, or external sales emails.\n- Meeting invites, schedule coordination, or general questions.\n- Newsletters, marketing, spam, or cold outreach.\n\n### ✉️ EMAIL TO ANALYZE:\nSender: {{ $json.headers.from }}\nSubject: {{ $json.subject }}\nBody: {{ $json.text }}\n\n### 📝 OUTPUT INSTRUCTIONS:\nYou must return ONLY a valid JSON object. Do not include markdown formatting, code blocks (like ```json), or any conversational text.\n\nUse exactly this structure:\n{\n  \"isApprovalRelated\": \"true or false\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        192,
+        -48
+      ],
+      "id": "cd6776c2-dae3-46f5-b03d-d884dae566fd",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        160
+      ],
+      "id": "f42f0bcd-9ad2-4484-8842-6ef8bc43beb2",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "lXqbnAFO7cQwUltb",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://snuggle-mushy-oxidize.ngrok-free.dev/api/approvals",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "n8n_secret_operant_key_2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $('Gmail Trigger').item.json.from.value[0].address }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $('Gmail Trigger').item.json.subject }}"
+            },
+            {
+              "name": "body",
+              "value": "={{ $('Gmail Trigger').item.json.text }}"
+            },
+            {
+              "name": "threadId",
+              "value": "={{ $('Gmail Trigger').item.json.threadId }}"
+            },
+            {
+              "name": "messageId",
+              "value": "={{ $('Gmail Trigger').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        848,
+        -80
+      ],
+      "id": "99dfd13e-6e1a-4513-a9fe-8d0344c3e573",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"isApprovalRelated\": \"true\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        160
+      ],
+      "id": "e4f0c6ce-6286-46ac-9a81-147aedb46076",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        816,
+        144
+      ],
+      "id": "a822db9a-e601-4b30-b1cd-0c1a5a371fa6",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "73be278c-287d-439b-aef9-090d19c33143",
+              "leftValue": "={{ $json.output.isApprovalRelated }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        48
+      ],
+      "id": "5c37f068-fb65-468c-b169-f776f48156ca",
+      "name": "is Approval Related Email"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-approval-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -64,
+        432
+      ],
+      "id": "da2d724a-b51e-4620-bae0-46cee9ef38a4",
+      "name": "Webhook",
+      "webhookId": "5e1e638b-3235-41af-991d-b002ab2502af"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        112,
+        560
+      ],
+      "id": "18d4839e-fd26-4fd5-97a8-41517a2e81cd",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "reply",
+        "threadId": "={{ $json.body.threadId }}",
+        "messageId": "={{ $json.body.messageId }}",
+        "message": "={{ $json.body.status == \"approved\" ? \"Your request is approved\" : \"Your request is rejected\" }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        368,
+        384
+      ],
+      "id": "747cd39e-a50f-4e9f-9cf2-91213ff866f1",
+      "name": "Reply to a message",
+      "webhookId": "6c3c5eae-1a4a-4e8c-a4c3-666df4d0e398",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "j0CDksGzU2NCdTqV",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "is Approval Related Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "is Approval Related Email": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Reply to a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0b18b834-a76a-4e49-8ff1-80131b907f6b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bd332d453a52da8354d32d66e42213de08f2a6d14368655be09241f7fd6442df"
+  },
+  "nodeGroups": [],
+  "id": "PkIqupeolHWKf35t",
+  "tags": []
+}
